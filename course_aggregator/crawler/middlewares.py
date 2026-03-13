@@ -1,4 +1,4 @@
-"""Downloader middlewares for anti-blocking protections and dynamic-page routing."""
+"""Downloader middlewares for dynamic-page routing and user-agent rotation."""
 
 from __future__ import annotations
 
@@ -9,8 +9,6 @@ from scrapy_playwright.page import PageMethod
 
 
 class UserAgentRotationMiddleware:
-    """Rotate modern browser user-agents per request."""
-
     def __init__(self, user_agents: list[str]) -> None:
         self.user_agents = user_agents
 
@@ -19,24 +17,8 @@ class UserAgentRotationMiddleware:
         return cls(crawler.settings.getlist("USER_AGENT_POOL"))
 
     def process_request(self, request: Request, spider):
-        if self.user_agents:
+        if b"User-Agent" not in request.headers and self.user_agents:
             request.headers[b"User-Agent"] = random.choice(self.user_agents).encode("utf-8")
-        return None
-
-
-class ProxyRotationMiddleware:
-    """Apply optional rotating proxies when configured."""
-
-    def __init__(self, proxies: list[str]) -> None:
-        self.proxies = [proxy.strip() for proxy in proxies if proxy.strip()]
-
-    @classmethod
-    def from_crawler(cls, crawler):
-        return cls(crawler.settings.getlist("PROXY_LIST"))
-
-    def process_request(self, request: Request, spider):
-        if self.proxies:
-            request.meta["proxy"] = random.choice(self.proxies)
         return None
 
 

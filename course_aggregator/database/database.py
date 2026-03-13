@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
+import re
 import sqlite3
 from pathlib import Path
-
-from utils.slug_utils import slugify_title
 
 
 class Database:
@@ -37,7 +36,7 @@ class Database:
             CREATE TABLE IF NOT EXISTS courses (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 title TEXT NOT NULL,
-                slug TEXT NOT NULL UNIQUE,
+                slug TEXT NOT NULL,
                 provider_id INTEGER NOT NULL,
                 rating REAL,
                 description TEXT,
@@ -77,6 +76,7 @@ class Database:
                 FOREIGN KEY (instructor_id) REFERENCES instructors(id) ON DELETE CASCADE
             );
 
+            CREATE INDEX IF NOT EXISTS idx_courses_slug ON courses(slug);
             CREATE INDEX IF NOT EXISTS idx_courses_provider_id ON courses(provider_id);
             CREATE INDEX IF NOT EXISTS idx_courses_rating ON courses(rating);
             CREATE INDEX IF NOT EXISTS idx_categories_slug ON categories(slug);
@@ -150,7 +150,7 @@ class Database:
             VALUES (?, ?)
             ON CONFLICT(name) DO UPDATE SET slug = excluded.slug
             """,
-            (cleaned, slugify_title(cleaned)),
+            (cleaned, self._slugify(cleaned)),
         )
         return self.conn.execute(
             "SELECT id FROM categories WHERE name = ?",
@@ -198,30 +198,10 @@ class Database:
                 (course_id, instructor_id),
             )
 
-    def ensure_unique_slug(self, title: str, course_url: str) -> str:
-        """Generate a unique SEO slug for the course title."""
-        assert self.conn is not None
-        base = slugify_title(title)
-
-        existing = self.conn.execute(
-            "SELECT course_url FROM courses WHERE slug = ?",
-            (base,),
-        ).fetchone()
-        if not existing or existing[0] == course_url:
-            return base
-
-        suffix = 2
-        while True:
-            candidate = f"{base}-{suffix}"
-            existing = self.conn.execute(
-                "SELECT course_url FROM courses WHERE slug = ?",
-                (candidate,),
-            ).fetchone()
-            if not existing or existing[0] == course_url:
-                return candidate
-            suffix += 1
-
     def commit(self) -> None:
         assert self.conn is not None
         self.conn.commit()
 
+    def _slugify(self, value: str) -> str:
+        text = re.sub(r"[^a-zA-Z0-9]+", "-", value.strip().lower()).strip("-")
+        return text or "unknown"
