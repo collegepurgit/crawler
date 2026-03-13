@@ -8,6 +8,7 @@ Production-ready Python 3.11 crawler for online course marketplaces (Coursera, U
 
 ## Features
 
+- This repository keeps `course_aggregator/` as the single maintained project (legacy duplicate scaffold removed).
 - Crawls both static HTML and JavaScript-rendered pages (React / Next.js / SPA).
 - Automatic dynamic-page detection in base spider:
   - empty/near-empty HTML shell
