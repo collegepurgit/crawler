@@ -1,6 +1,0 @@
-__pycache__/
-*.py[cod]
-.venv/
-logs/*.log
-database/*.db
-output/*.jsonl
