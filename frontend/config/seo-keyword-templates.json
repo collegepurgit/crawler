@@ -1,0 +1,40 @@
+{
+  "templates": [
+    {
+      "modifier": "best",
+      "keyword": "best {category} courses",
+      "slug": "best-{category_slug}-courses",
+      "title": "Best {category} Courses Online",
+      "heading": "Best {category} Courses",
+      "description": "Explore the best {category} courses from top online learning platforms.",
+      "source": "category"
+    },
+    {
+      "modifier": "free",
+      "keyword": "free {category} courses",
+      "slug": "free-{category_slug}-courses",
+      "title": "Free {category} Courses Online",
+      "heading": "Free {category} Courses",
+      "description": "Discover free {category} courses you can start today.",
+      "source": "search"
+    },
+    {
+      "modifier": "beginner",
+      "keyword": "beginner {category} courses",
+      "slug": "beginner-{category_slug}-courses",
+      "title": "Beginner {category} Courses Online",
+      "heading": "Beginner {category} Courses",
+      "description": "Start learning with beginner-friendly {category} courses for new learners.",
+      "source": "search"
+    },
+    {
+      "modifier": "advanced",
+      "keyword": "advanced {category} courses",
+      "slug": "advanced-{category_slug}-courses",
+      "title": "Advanced {category} Courses Online",
+      "heading": "Advanced {category} Courses",
+      "description": "Level up your skills with advanced {category} courses and hands-on projects.",
+      "source": "search"
+    }
+  ]
+}
