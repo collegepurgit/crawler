@@ -65,18 +65,8 @@ npm run seo:generate
 
 ## Sitemap
 
-A dynamic XML sitemap system is available at:
+A dynamic XML sitemap is available at:
 
-- `/sitemap.xml` (sitemap index)
-- `/sitemaps/static.xml` (homepage, index pages, category/provider pages, SEO keyword pages)
-- `/sitemaps/courses-1.xml`, `/sitemaps/courses-2.xml`, ... (chunked course pages)
+- `/sitemap.xml`
 
-It is generated server-side from live API/database-backed records and SEO config, so new courses/categories/providers are reflected automatically. Course URLs are chunked to support thousands of pages.
-
-
-SEO metadata fields generated per SEO page:
-
-- page title
-- meta description
-- canonical URL
-- OpenGraph title/description/url
+It includes homepage, courses index, course detail pages, category pages, provider pages, and SEO keyword pages. It is generated server-side from live API data and SEO config so new courses/categories/providers are reflected automatically.

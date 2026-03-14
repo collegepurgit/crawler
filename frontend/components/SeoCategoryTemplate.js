@@ -1,7 +1,6 @@
 import CourseList from './CourseList';
 import Pagination from './Pagination';
 import SeoFaqSection from './SeoFaqSection';
-import InternalCourseLinks from './InternalCourseLinks';
 
 export default function SeoCategoryTemplate({
   seoSlug,
@@ -26,12 +25,6 @@ export default function SeoCategoryTemplate({
       </section>
 
       <Pagination page={page} total={total} limit={limit} basePath={`/${seoSlug}`} extraQuery={{}} />
-
-
-      <InternalCourseLinks
-        courses={courses.slice(0, 10)}
-        title="Popular course links"
-      />
 
       <SeoFaqSection faqs={faqs} />
     </main>

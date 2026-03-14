@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 import logging
-import subprocess
-import sys
-from pathlib import Path
+import re
 from urllib.parse import urlparse
 
 from itemadapter import ItemAdapter
@@ -13,8 +11,6 @@ from scrapy.exceptions import DropItem
 
 from database.database import Database
 from database.models import InstructorRecord
-from utils.category_normalizer import normalize_category_list
-from utils.slug_utils import slugify_title
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +21,6 @@ class SQLitePipeline:
     def __init__(self, db_path: str) -> None:
         self.db_path = db_path
         self.db: Database | None = None
-        self._processed_items = 0
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -40,9 +35,6 @@ class SQLitePipeline:
         if self.db:
             self.db.close()
 
-        if self._processed_items > 0:
-            self._refresh_seo_pages(spider)
-
     def process_item(self, item, spider):
         assert self.db is not None
         adapter = ItemAdapter(item)
@@ -53,9 +45,7 @@ class SQLitePipeline:
                 raise DropItem("Missing course_url; cannot persist course")
 
             title = (adapter.get("title") or adapter.get("course_title") or "Untitled course").strip()
-            requested_slug = (adapter.get("slug") or "").strip()
-            base_slug = requested_slug or slugify_title(title or course_url)
-            slug = self.db.ensure_unique_slug(base_slug, course_url)
+            slug = (adapter.get("slug") or self._slugify(title) or self._slugify(course_url)).strip()
 
             # 1) Insert provider if missing.
             provider_name = (adapter.get("provider_name") or adapter.get("provider") or "Unknown Provider").strip()
@@ -89,7 +79,6 @@ class SQLitePipeline:
             self.db.replace_course_instructors(course_id, instructor_ids)
 
             self.db.commit()
-            self._processed_items += 1
             logger.info("database insert | course_url=%s provider_id=%s course_id=%s", course_url, provider_id, course_id)
             return item
         except DropItem:
@@ -109,8 +98,8 @@ class SQLitePipeline:
         else:
             values = [str(raw_value).strip()]
 
-        # Normalize cross-provider labels and dedupe for consistent DB storage.
-        return normalize_category_list(values)
+        # Preserve order + remove duplicates.
+        return list(dict.fromkeys(values))
 
     def _normalize_instructors(self, raw_value) -> list[InstructorRecord]:
         if not raw_value:
@@ -143,27 +132,9 @@ class SQLitePipeline:
                 unique.append(instructor)
         return unique
 
-    def _refresh_seo_pages(self, spider) -> None:
-        script_path = Path(__file__).resolve().parents[2] / "frontend" / "scripts" / "generate_seo_keywords.py"
-        if not script_path.exists():
-            logger.warning("seo-refresh skipped | script not found: %s", script_path)
-            return
-
-        try:
-            result = subprocess.run(
-                [sys.executable, str(script_path)],
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-            output = (result.stdout or "").strip()
-            if output:
-                logger.info("seo-refresh success | %s", output)
-            else:
-                logger.info("seo-refresh success")
-        except subprocess.CalledProcessError as exc:
-            logger.warning("seo-refresh failed | code=%s stderr=%s", exc.returncode, (exc.stderr or "").strip())
-
+    def _slugify(self, value: str) -> str:
+        text = re.sub(r"[^a-zA-Z0-9]+", "-", (value or "").lower()).strip("-")
+        return text or "unknown"
 
     def _domain_to_site(self, url: str) -> str:
         if not url:

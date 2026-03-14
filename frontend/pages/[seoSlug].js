@@ -13,41 +13,37 @@ function getSeoEntryBySlug(slug) {
   return entries.find((entry) => entry.slug === slug) || null;
 }
 
-function buildEntryMetadata(seoEntry) {
-  return buildSeo({
-    title: seoEntry.title || `${seoEntry.heading} Online`,
-    description: seoEntry.description,
-    url: seoEntry.canonical_url || `${seoKeywordConfig?.site_url || 'http://localhost:3000'}${seoEntry.url_path || `/${seoEntry.slug}`}`,
+export default function SeoCourseListingPage({ seoSlug, heading, description, categoryLabel, courses, total, limit, page }) {
+  const pageSeo = buildSeo({
+    title: heading + ' Online',
+    description,
+    url: `http://localhost:3000/${seoSlug}`
   });
-}
-
-export default function SeoCourseListingPage({ seoEntry, courses, total, limit, page }) {
-  const pageSeo = buildEntryMetadata(seoEntry);
 
   return (
     <>
       <Head>
-        <title>{seoEntry.title || pageSeo.title}</title>
-        <meta name="description" content={seoEntry.description || pageSeo.description} />
-        <meta property="og:title" content={seoEntry.og_title || pageSeo.openGraph.title} />
-        <meta property="og:description" content={seoEntry.og_description || pageSeo.openGraph.description} />
-        <meta property="og:url" content={seoEntry.og_url || pageSeo.openGraph.url} />
+        <title>{pageSeo.title}</title>
+        <meta name="description" content={pageSeo.description} />
+        <meta property="og:title" content={pageSeo.openGraph.title} />
+        <meta property="og:description" content={pageSeo.openGraph.description} />
+        <meta property="og:url" content={pageSeo.openGraph.url} />
         <meta property="og:image" content={pageSeo.openGraph.image} />
         <meta name="robots" content="index,follow" />
-        <link rel="canonical" href={seoEntry.canonical_url || pageSeo.openGraph.url} />
+        <link rel="canonical" href={`http://localhost:3000/${seoSlug}`} />
       </Head>
 
       <Header />
 
       <SeoCategoryTemplate
-        seoSlug={seoEntry.slug}
-        heading={seoEntry.heading}
-        intro={seoEntry.description}
+        seoSlug={seoSlug}
+        heading={heading}
+        intro={description}
         courses={courses}
         total={total}
         limit={limit}
         page={page}
-        faqs={seoFaqs(seoEntry.category)}
+        faqs={seoFaqs(categoryLabel)}
       />
 
       <Footer />
@@ -78,7 +74,10 @@ export async function getServerSideProps({ params, query }) {
 
     return {
       props: {
-        seoEntry,
+        seoSlug: params.seoSlug,
+        heading: seoEntry.heading,
+        description: seoEntry.description,
+        categoryLabel: seoEntry.category,
         courses: ranked.slice(offset, offset + PAGE_SIZE),
         total: ranked.length,
         limit: PAGE_SIZE,
@@ -88,7 +87,10 @@ export async function getServerSideProps({ params, query }) {
   } catch {
     return {
       props: {
-        seoEntry,
+        seoSlug: params.seoSlug,
+        heading: seoEntry.heading,
+        description: seoEntry.description,
+        categoryLabel: seoEntry.category,
         courses: [],
         total: 0,
         limit: PAGE_SIZE,
