@@ -1,4 +1,4 @@
-"""CLI runner for manual and scheduled crawler execution."""
+"""CLI runner for starting course provider spiders and printing crawl statistics."""
 
 from __future__ import annotations
 
@@ -8,8 +8,6 @@ from pathlib import Path
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
 
-from utils.scheduler import CrawlScheduler
-
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 PROVIDERS = ("coursera", "udemy", "edx")
@@ -17,65 +15,50 @@ PROVIDERS = ("coursera", "udemy", "edx")
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run course aggregator spiders")
-
-    mode_group = parser.add_mutually_exclusive_group(required=True)
-    mode_group.add_argument(
+    parser.add_argument(
         "--provider",
+        required=True,
         choices=PROVIDERS,
-        help="Run one provider spider manually (coursera|udemy|edx)",
+        help="Provider spider to run (coursera|udemy|edx)",
     )
-    mode_group.add_argument(
-        "--schedule",
-        action="store_true",
-        help="Run scheduler mode (sequential spiders every 24 hours)",
-    )
-
     parser.add_argument(
         "--seed-urls",
         default="",
-        help="Optional comma-separated seed URLs override (manual mode only)",
+        help="Optional comma-separated seed URLs override",
     )
     parser.add_argument(
         "--max-depth",
         type=int,
         default=None,
-        help="Optional crawl depth override (manual mode only)",
+        help="Optional crawl depth override",
     )
     return parser
-
-
-def run_provider(provider: str, seed_urls: str = "", max_depth: int | None = None) -> dict:
-    settings = get_project_settings()
-    settings.set("PROJECT_ROOT", str(PROJECT_ROOT), priority="cmdline")
-
-    process = CrawlerProcess(settings)
-    crawler = process.create_crawler(provider)
-
-    crawl_kwargs: dict[str, str | int] = {}
-    if seed_urls:
-        crawl_kwargs["seed_urls"] = seed_urls
-    if max_depth is not None:
-        crawl_kwargs["max_depth"] = max_depth
-
-    process.crawl(crawler, **crawl_kwargs)
-    process.start()
-    return crawler.stats.get_stats()
 
 
 def main() -> None:
     args = build_parser().parse_args()
 
-    if args.schedule:
-        scheduler = CrawlScheduler(project_root=PROJECT_ROOT, interval_hours=24)
-        scheduler.start()
-        return
+    settings = get_project_settings()
+    settings.set("PROJECT_ROOT", str(PROJECT_ROOT), priority="cmdline")
 
-    stats = run_provider(provider=args.provider, seed_urls=args.seed_urls, max_depth=args.max_depth)
+    process = CrawlerProcess(settings)
+    crawler = process.create_crawler(args.provider)
+
+    crawl_kwargs: dict[str, str | int] = {}
+    if args.seed_urls:
+        crawl_kwargs["seed_urls"] = args.seed_urls
+    if args.max_depth is not None:
+        crawl_kwargs["max_depth"] = args.max_depth
+
+    process.crawl(crawler, **crawl_kwargs)
+    process.start()
+
+    crawler_stats = crawler.stats.get_stats()
 
     print("\n=== Crawl Statistics ===")
     print(f"provider: {args.provider}")
-    for key in sorted(stats):
-        print(f"{key}: {stats[key]}")
+    for key in sorted(crawler_stats):
+        print(f"{key}: {crawler_stats[key]}")
 
 
 if __name__ == "__main__":

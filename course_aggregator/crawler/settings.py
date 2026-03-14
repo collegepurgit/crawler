@@ -8,44 +8,27 @@ NEWSPIDER_MODULE = "crawler.spiders"
 
 ROBOTSTXT_OBEY = True
 
-# Concurrency control (anti-blocking)
-CONCURRENT_REQUESTS = 8
-CONCURRENT_REQUESTS_PER_DOMAIN = 4
-
-# Randomized delay: with RANDOMIZE_DOWNLOAD_DELAY=True this becomes ~1-3s.
-DOWNLOAD_DELAY = 2
+CONCURRENT_REQUESTS = 12
+CONCURRENT_REQUESTS_PER_DOMAIN = 6
+DOWNLOAD_DELAY = 0.25
 RANDOMIZE_DOWNLOAD_DELAY = True
-
-# AutoThrottle settings
 AUTOTHROTTLE_ENABLED = True
-AUTOTHROTTLE_START_DELAY = 2
-AUTOTHROTTLE_MAX_DELAY = 10
-AUTOTHROTTLE_TARGET_CONCURRENCY = 2.0
+AUTOTHROTTLE_TARGET_CONCURRENCY = 3.0
 
-DEPTH_LIMIT = 3
-
-# Retry system
 RETRY_ENABLED = True
 RETRY_TIMES = 3
-RETRY_HTTP_CODES = [500, 502, 503, 504, 429]
+RETRY_HTTP_CODES = [408, 429, 500, 502, 503, 504, 522, 524]
 
-# User-agent rotation pool (Chrome, Firefox, Safari, Edge)
 USER_AGENT_POOL = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (X11; Linux x86_64; rv:127.0) Gecko/20100101 Firefox/127.0",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0.0",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (X11; Linux x86_64; rv:126.0) Gecko/20100101 Firefox/126.0",
 ]
-
-# Optional proxy rotation. Keep empty to disable.
-PROXY_LIST = []
 
 DOWNLOADER_MIDDLEWARES = {
     "crawler.middlewares.UserAgentRotationMiddleware": 350,
     "scrapy.downloadermiddlewares.retry.RetryMiddleware": 550,
     "crawler.middlewares.AutoPlaywrightMiddleware": 560,
-    "crawler.middlewares.ProxyRotationMiddleware": 740,
-    "scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware": 750,
 }
 
 ITEM_PIPELINES = {"crawler.pipelines.SQLitePipeline": 300}

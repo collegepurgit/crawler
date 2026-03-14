@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import logging
 import re
 from collections import deque
 from urllib.parse import urlparse
@@ -11,8 +10,6 @@ import scrapy
 
 from crawler.items import CourseItem
 
-logger = logging.getLogger(__name__)
-
 
 class BaseCourseSpider(scrapy.Spider):
     """Base spider with pagination, link discovery, depth limits, and JS fallback."""
@@ -20,7 +17,7 @@ class BaseCourseSpider(scrapy.Spider):
     platform = "generic"
     start_urls: list[str] = []
     allowed_domains: list[str] = []
-    max_depth = 3
+    max_depth = 2
 
     listing_selectors: tuple[str, ...] = (
         "article",
@@ -80,24 +77,15 @@ class BaseCourseSpider(scrapy.Spider):
     # Automatic link discovery rules.
     discover_link_keywords = ("course", "learn", "training", "class", "program")
 
-    @classmethod
-    def from_crawler(cls, crawler, *args, **kwargs):
-        spider = super().from_crawler(crawler, *args, **kwargs)
-        if not spider.max_depth_overridden:
-            spider.max_depth = crawler.settings.getint("DEPTH_LIMIT", spider.max_depth)
-        return spider
-
     def __init__(self, seed_urls: str | None = None, max_depth: int | None = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.seed_urls = [u.strip() for u in (seed_urls or "").split(",") if u.strip()]
-        self.max_depth_overridden = max_depth is not None
-        if self.max_depth_overridden:
+        if max_depth is not None:
             self.max_depth = int(max_depth)
         self.seen_urls: set[str] = set()
         self.js_retries: set[str] = set()
         self.emitted_course_urls: set[str] = set()
         self.pending_urls: deque[tuple[str, int, bool, bool]] = deque()
-        logger.info("crawler start | spider=%s max_depth=%s", self.name, self.max_depth)
 
     def start_requests(self):
         urls = self.seed_urls or list(self.start_urls)
@@ -121,12 +109,10 @@ class BaseCourseSpider(scrapy.Spider):
             return
         self.seen_urls.add(normalized)
         self.pending_urls.append((normalized, depth, requires_js, dont_filter))
-        logger.info("url discovered | spider=%s depth=%s url=%s", self.name, depth, normalized)
 
     def _drain_queue(self):
         while self.pending_urls:
             url, depth, requires_js, dont_filter = self.pending_urls.popleft()
-            logger.debug("scheduler enqueue | spider=%s depth=%s url=%s", self.name, depth, url)
             yield self._request(url=url, depth=depth, requires_js=requires_js, dont_filter=dont_filter)
 
     def parse(self, response: scrapy.http.Response):
