@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from urllib.parse import urlparse
 
 from itemadapter import ItemAdapter
@@ -10,8 +11,6 @@ from scrapy.exceptions import DropItem
 
 from database.database import Database
 from database.models import InstructorRecord
-from utils.category_normalizer import normalize_category_list
-from utils.slug_utils import slugify_title
 
 logger = logging.getLogger(__name__)
 
@@ -46,9 +45,7 @@ class SQLitePipeline:
                 raise DropItem("Missing course_url; cannot persist course")
 
             title = (adapter.get("title") or adapter.get("course_title") or "Untitled course").strip()
-            requested_slug = (adapter.get("slug") or "").strip()
-            base_slug = requested_slug or slugify_title(title or course_url)
-            slug = self.db.ensure_unique_slug(base_slug, course_url)
+            slug = (adapter.get("slug") or self._slugify(title) or self._slugify(course_url)).strip()
 
             # 1) Insert provider if missing.
             provider_name = (adapter.get("provider_name") or adapter.get("provider") or "Unknown Provider").strip()
@@ -101,8 +98,8 @@ class SQLitePipeline:
         else:
             values = [str(raw_value).strip()]
 
-        # Normalize cross-provider labels and dedupe for consistent DB storage.
-        return normalize_category_list(values)
+        # Preserve order + remove duplicates.
+        return list(dict.fromkeys(values))
 
     def _normalize_instructors(self, raw_value) -> list[InstructorRecord]:
         if not raw_value:
@@ -135,6 +132,9 @@ class SQLitePipeline:
                 unique.append(instructor)
         return unique
 
+    def _slugify(self, value: str) -> str:
+        text = re.sub(r"[^a-zA-Z0-9]+", "-", (value or "").lower()).strip("-")
+        return text or "unknown"
 
     def _domain_to_site(self, url: str) -> str:
         if not url:
